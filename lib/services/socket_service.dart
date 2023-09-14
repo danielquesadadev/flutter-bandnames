@@ -5,27 +5,34 @@ enum ServerStatus { Online, Offline, Connecting }
 
 class SocketService with ChangeNotifier {
   ServerStatus _serverStatus = ServerStatus.Connecting;
+  late IO.Socket _socket;
 
-  get serverStatus => _serverStatus;
+  ServerStatus get serverStatus => _serverStatus;
+
+  IO.Socket get socket => _socket;
+  Function get emit => _socket.emit;
 
   SocketService() {
     _initConfig();
   }
 
+  get console => null;
+
   void _initConfig() {
     // Dart client
-    IO.Socket socket = IO.io('http://192.168.68.56:3000/', {
+    _socket = IO.io('http://192.168.18.13:3000/', {
       'transports': ['websocket'],
       'autoConnect': true
     });
-    socket.onConnect((_) {
-      print('connect');
-      socket.emit('msg', 'test');
+
+    _socket.onConnect((_) {
       _serverStatus = ServerStatus.Online;
       notifyListeners();
     });
-    socket.on('event', (data) => print(data));
-    socket.onDisconnect((_) => {_serverStatus = ServerStatus.Offline});
-    socket.on('fromServer', (_) => print(_));
+
+    _socket.onDisconnect((_) {
+      _serverStatus = ServerStatus.Offline;
+      notifyListeners();
+    });
   }
 }

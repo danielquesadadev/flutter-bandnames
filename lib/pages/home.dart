@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'package:band_names/services/socket_service.dart';
 import 'package:band_names/models/band.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -12,22 +14,55 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Band> bands = [
-    Band(id: '1', name: 'Metallica', votes: 5),
+    /* Band(id: '1', name: 'Metallica', votes: 5),
     Band(id: '2', name: 'ACDC', votes: 5),
     Band(id: '3', name: 'Estopa', votes: 5),
-    Band(id: '4', name: 'Bad bunny', votes: 5),
+    Band(id: '4', name: 'Bad bunny', votes: 5), */
   ];
 
   @override
+  void initState() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+    socketService.socket.on('active-bands', (payload) {
+      this.bands = (payload as List).map((band) => Band.fromMap(band)).toList();
+    });
+    setState(() {});
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    final socketService = Provider.of<SocketService>(context, listen: false);
+    socketService.socket.off('active-bands');
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final socketService = Provider.of<SocketService>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'BandNames',
+          'Grupos de música',
           style: TextStyle(color: Colors.black87),
         ),
         backgroundColor: Colors.white,
         elevation: 1,
+        actions: [
+          Container(
+            margin: EdgeInsets.only(right: 10),
+            child: (socketService.serverStatus == ServerStatus.Online)
+                ? Icon(
+                    Icons.check_circle,
+                    color: Colors.blue[300],
+                  )
+                : Icon(
+                    Icons.offline_bolt,
+                    color: Colors.red[900],
+                  ),
+          )
+        ],
       ),
       body: ListView.builder(
           itemCount: bands.length,
